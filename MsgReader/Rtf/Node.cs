@@ -4,7 +4,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
     /// <summary>
     /// RTF parser node
     /// </summary>
-    public class Node
+    internal class Node
     {
         #region Fields
         protected RawDocument InternalOwnerDocument = null;
@@ -137,6 +137,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
             InternalKeyword = key;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Node(Token token)
         {
             InternalKeyword = token.Key;

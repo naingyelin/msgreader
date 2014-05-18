@@ -4,7 +4,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
     /// <summary>
     /// Rtf token type
     /// </summary>
-    public class Token
+    internal class Token
     {
         #region Properties
         /// <summary>
@@ -26,6 +26,9 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
         /// Param value
         /// </summary>
         public int Param { get; set; }
+
+        // Gives the original hex notation from the Param value when the token key is a [']
+        public string Hex { get; set; }
 
         /// <summary>
         /// Parent token

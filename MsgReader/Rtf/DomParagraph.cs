@@ -6,7 +6,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
     /// <summary>
     /// Rtf paragraph element
     /// </summary>
-    public class DomParagraph : DomElement
+    internal class DomParagraph : DomElement
     {
         #region Properties
         /// <summary>
@@ -44,8 +44,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
             if (Format != null)
             {
                 stringBuilder.Append("(" + Format.Align + ")");
-                if (Format.ListID >= 0)
-                    stringBuilder.Append("ListID:" + Format.ListID);
+                if (Format.ListId >= 0)
+                    stringBuilder.Append("ListID:" + Format.ListId);
             }
 
             return stringBuilder.ToString();

@@ -7,14 +7,14 @@ namespace DocumentServices.Modules.Readers.MsgReader.Rtf
     /// Progress event handler type
     /// </summary>
     /// <param name="sender">sender</param>
-    /// <param name="args">event arguments</param>
-    public delegate void ProgressEventHandler( object sender , ProgressEventArgs args );
+    /// <param name="e">event arguments</param>
+    internal delegate void ProgressEventHandler(object sender , ProgressEventArgs e);
     #endregion
 
     /// <summary>
     /// Progress event arguments
     /// </summary>
-    public class ProgressEventArgs : EventArgs
+    internal class ProgressEventArgs : EventArgs
     {
         #region Properties
         /// <summary>
