@@ -32,221 +32,6 @@ namespace DocumentServices.Modules.Readers.MsgReader
     }
     #endregion
 
-    public abstract class ReaderBase : IReader
-    {
-
-        #region Fields
-        /// <summary>
-        /// Contains an error message when something goes wrong in the <see cref="ExtractToFolder"/> method.
-        /// This message can be retreived with the GetErrorMessage. This way we keep .NET exceptions inside
-        /// when this code is called from a COM language
-        /// </summary>
-        protected string _errorMessage;
-
-        #endregion
-
-        #region internal class
-        /// <summary>
-        /// Used as a placeholder for the recipients from the MSG file itself or from the "internet"
-        /// headers when this message is send outside an Exchange system
-        /// </summary>
-        internal class Recipient
-        {
-            public string EmailAddress { get; set; }
-            public string DisplayName { get; set; }
-        }
-        #endregion
-
-        #region ExtractToFolder
-
-        /// <summary>
-        /// Extract the input msg file to the given output folder
-        /// </summary>
-        /// <param name="inputFile">The msg file</param>
-        /// <param name="outputFolder">The folder where to extract the msg file</param>
-        /// <returns>String array containing the message body and its (inline) attachments</returns>
-        public abstract string[] ExtractToFolder(string inputFile, string outputFolder);
-        #endregion
-
-        #region GetErrorMessage
-        /// <summary>
-        /// Get the last know error message. When the string is empty there are no errors
-        /// </summary>
-        /// <returns></returns>
-        public string GetErrorMessage()
-        {
-            return _errorMessage;
-        }
-        #endregion
-
-        #region GetEmailSender
-        /// <summary>
-        /// Change the E-mail sender addresses to a human readable format
-        /// </summary>
-        /// <param name="message">The Storage.Message object</param>
-        /// <param name="convertToHref">When true the E-mail addresses are converted to hyperlinks</param>
-        /// <returns></returns>
-        protected static string GetEmailSender(Storage.Message message, bool convertToHref = false)
-        {
-            var output = string.Empty;
-
-            if (message == null) return string.Empty;
-
-            var eMail = message.Sender.Email;
-            if (string.IsNullOrEmpty(eMail))
-            {
-                if (message.Headers != null && message.Headers.From != null)
-                    eMail = message.Headers.From.Address;
-            }
-
-            var displayName = message.Sender.DisplayName;
-            if (string.IsNullOrEmpty(displayName))
-            {
-                if (message.Headers != null && message.Headers.From != null)
-                    displayName = message.Headers.From.DisplayName;
-            }
-
-            if (string.IsNullOrEmpty(eMail))
-                convertToHref = false;
-
-            if (convertToHref)
-                output += "<a href=\"mailto:" + eMail + "\">" +
-                          (!string.IsNullOrEmpty(displayName)
-                              ? displayName
-                              : eMail) + "</a>";
-
-            else
-            {
-                if (string.IsNullOrEmpty(eMail))
-                {
-                    output += !string.IsNullOrEmpty(displayName)
-                        ? displayName
-                        : string.Empty;
-                }
-                else
-                {
-                    output += eMail +
-                              (!string.IsNullOrEmpty(displayName)
-                                  ? " (" + displayName + ")"
-                                  : string.Empty);
-                }
-            }
-
-            return output;
-        }
-        #endregion
-
-        #region GetEmailRecipients
-        /// <summary>
-        /// Change the E-mail sender addresses to a human readable format
-        /// </summary>
-        /// <param name="message">The Storage.Message object</param>
-        /// <param name="convertToHref">When true the E-mail addresses are converted to hyperlinks</param>
-        /// <param name="type">This types says if we want to get the TO's or CC's</param>
-        /// <returns></returns>
-        protected static string GetEmailRecipients(Storage.Message message,
-                                                 Storage.RecipientType type,
-                                                 bool convertToHref = false)
-        {
-            var output = string.Empty;
-
-            var recipients = new List<Reader.Recipient>();
-
-            if (message == null)
-                return output;
-
-            foreach (var recipient in message.Recipients)
-            {
-                // First we filter for the correct recipient type
-                if (recipient.Type == type)
-                    recipients.Add(new Reader.Recipient { EmailAddress = recipient.Email, DisplayName = recipient.DisplayName });
-            }
-
-            if (recipients.Count == 0 && message.Headers != null)
-            {
-                foreach (var to in message.Headers.To)
-                    recipients.Add(new Reader.Recipient { EmailAddress = to.Address, DisplayName = to.DisplayName });
-            }
-
-            foreach (var recipient in recipients)
-            {
-                if (output != string.Empty)
-                    output += "; ";
-
-                var convert = convertToHref;
-
-                if (convert && string.IsNullOrEmpty(recipient.EmailAddress))
-                    convert = false;
-
-                if (convert)
-                {
-                    output += "<a href=\"mailto:" + message.Sender.Email + "\">" +
-                              (!string.IsNullOrEmpty(message.Sender.DisplayName)
-                                  ? recipient.DisplayName
-                                  : recipient.EmailAddress) + "</a>";
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(recipient.EmailAddress))
-                    {
-                        output += !string.IsNullOrEmpty(recipient.DisplayName)
-                            ? recipient.DisplayName
-                            : string.Empty;
-                    }
-                    else
-                    {
-                        output += recipient.EmailAddress +
-                                  (!string.IsNullOrEmpty(recipient.DisplayName)
-                                      ? " (" + recipient.DisplayName + ")"
-                                      : string.Empty);
-                    }
-                }
-            }
-
-            return output;
-        }
-        #endregion
-
-        #region InjectOutlookHeader
-        /// <summary>
-        /// Inject an outlook style header into the email body
-        /// </summary>
-        /// <param name="eMail"></param>
-        /// <param name="header"></param>
-        /// <returns></returns>
-        protected string InjectOutlookHeader(string eMail, string header)
-        {
-            var temp = eMail.ToUpper();
-
-            var begin = temp.IndexOf("<BODY", StringComparison.Ordinal);
-
-            if (begin > 0)
-            {
-                begin = temp.IndexOf(">", begin, StringComparison.Ordinal);
-                return eMail.Insert(begin + 1, header);
-            }
-
-            return header + eMail;
-        }
-        #endregion
-
-        #region GetInnerException
-        /// <summary>
-        /// Get the complete inner exception tree
-        /// </summary>
-        /// <param name="e">The exception object</param>
-        /// <returns></returns>
-        protected static string GetInnerException(Exception e)
-        {
-            var exception = e.Message + "\n";
-            if (e.InnerException != null)
-                exception += GetInnerException(e.InnerException);
-            return exception;
-        }
-        #endregion
-
-    }
-
     [Guid("E9641DF0-18FC-11E2-BC95-1ACF6088709B")]
     [ComVisible(true)]
     public class Reader : IReader
@@ -303,7 +88,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                             return WriteAppointment(message, outputFolder, hyperlinks).ToArray();
 
                         case Storage.Message.MessageType.Task:
-                            throw new Exception("An task file is not supported");
+                            throw new Exception("A task file is not supported");
 
                         case Storage.Message.MessageType.StickyNote:
                             return WriteStickyNote(message, outputFolder, hyperlinks).ToArray();
@@ -366,16 +151,16 @@ namespace DocumentServices.Modules.Readers.MsgReader
                                     : "email") + (htmlBody ? ".htm" : ".txt");
 
             result.Add(eMailFileName);
-            
+
             var attachmentList = new List<string>();
-      
+
             foreach (var attachment in message.Attachments)
             {
                 FileInfo fileInfo = null;
-                
+
                 if (attachment is Storage.Attachment)
                 {
-                    var attach = (Storage.Attachment) attachment;
+                    var attach = (Storage.Attachment)attachment;
                     fileInfo = new FileInfo(FileManager.FileExistsMakeNew(outputFolder + attach.FileName));
                     File.WriteAllBytes(fileInfo.FullName, attach.Data);
 
@@ -393,7 +178,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 }
                 else if (attachment is Storage.Message)
                 {
-                    var msg = (Storage.Message) attachment;
+                    var msg = (Storage.Message)attachment;
 
                     fileInfo = new FileInfo(FileManager.FileExistsMakeNew(outputFolder + msg.FileName) + ".msg");
                     result.Add(fileInfo.FullName);
@@ -417,7 +202,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 // Start of table
                 emailHeader =
                     "<table style=\"width:100%; font-family: Times New Roman; font-size: 12pt;\">" + Environment.NewLine;
-                
+
                 // From
                 emailHeader +=
                     "<tr style=\"height: 18px; vertical-align: top; \"><td style=\"width: 100px; font-weight: bold; \">" + LanguageConsts.EmailFromLabel + ":</td><td>" + GetEmailSender(message, hyperlinks, true) + "</td></tr>" + Environment.NewLine;
@@ -472,7 +257,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 if (attachmentList.Count != 0)
                     emailHeader +=
                         "<tr style=\"height: 18px; vertical-align: top; \"><td style=\"width: 100px; font-weight: bold; \">" +
-                        LanguageConsts.EmailAttachmentsLabel + ":</td><td>" + string.Join(", ", attachmentList) + "</td></tr>" +
+                        LanguageConsts.EmailAttachmentsLabel + ":</td><td>" + string.Join(", ", attachmentList.ToArray()) + "</td></tr>" +
                         Environment.NewLine;
 
                 // Empty line
@@ -480,7 +265,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
 
                 // Follow up
                 if (message.Flag != null)
-                { 
+                {
                     emailHeader +=
                         "<tr style=\"height: 18px; vertical-align: top; \"><td style=\"width: 100px; font-weight: bold; \">" +
                         LanguageConsts.EmailFollowUpLabel + ":</td><td>" + message.Flag.Request + "</td></tr>" + Environment.NewLine;
@@ -528,7 +313,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 {
                     emailHeader +=
                         "<tr style=\"height: 18px; vertical-align: top; \"><td style=\"width: 100px; font-weight: bold; \">" +
-                        LanguageConsts.EmailCategoriesLabel + ":</td><td>" + String.Join("; ", categories) + "</td></tr>" +
+                        LanguageConsts.EmailCategoriesLabel + ":</td><td>" + String.Join("; ", categories.ToArray()) + "</td></tr>" +
                         Environment.NewLine;
 
                     // Empty line
@@ -563,17 +348,17 @@ namespace DocumentServices.Modules.Readers.MsgReader
                     LanguageConsts.EmailCategoriesLabel
                 };
 
-                var maxLength = languageConsts.Select(languageConst => languageConst.Length).Concat(new[] {0}).Max();
+                var maxLength = languageConsts.Select(languageConst => languageConst.Length).Concat(new[] { 0 }).Max();
 
                 // From
                 emailHeader =
                     (LanguageConsts.EmailFromLabel + ":").PadRight(maxLength) + GetEmailSender(message, false, false) + Environment.NewLine;
-                    
+
                 // Sent on
                 if (message.SentOn != null)
                     emailHeader +=
                         (LanguageConsts.EmailSentOnLabel + ":").PadRight(maxLength) +
-                        ((DateTime) message.SentOn).ToString(LanguageConsts.DataFormat) + Environment.NewLine;
+                        ((DateTime)message.SentOn).ToString(LanguageConsts.DataFormat) + Environment.NewLine;
 
                 // To
                 emailHeader +=
@@ -584,12 +369,12 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 var cc = GetEmailRecipients(message, Storage.Recipient.RecipientType.Cc, false, false);
                 if (cc != string.Empty)
                     emailHeader += (LanguageConsts.EmailCcLabel + ":").PadRight(maxLength) + cc + Environment.NewLine;
-                
+
                 // CC
                 var bcc = GetEmailRecipients(message, Storage.Recipient.RecipientType.Bcc, false, false);
                 if (bcc != string.Empty)
                     emailHeader += (LanguageConsts.EmailCcLabel + ":").PadRight(maxLength) + bcc + Environment.NewLine;
-                
+
                 // Subject
                 emailHeader += (LanguageConsts.EmailSubjectLabel + ":").PadRight(maxLength) + message.Subject + Environment.NewLine;
 
@@ -606,7 +391,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 // Attachments
                 if (attachmentList.Count != 0)
                     emailHeader += (LanguageConsts.EmailAttachmentsLabel + ":").PadRight(maxLength) +
-                                          string.Join(", ", attachmentList) + Environment.NewLine + Environment.NewLine;
+                                          string.Join(", ", attachmentList.ToArray()) + Environment.NewLine + Environment.NewLine;
 
                 // Urgent
                 if (message.Importance != Storage.Message.MessageImportance.Normal)
@@ -618,7 +403,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                     emailHeader += (LanguageConsts.ImportanceLabel + ":").PadRight(maxLength) +
                                     importanceText + Environment.NewLine + Environment.NewLine;
                 }
-                
+
                 // Follow up
                 if (message.Flag != null)
                 {
@@ -658,7 +443,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 if (categories != null)
                 {
                     emailHeader += (LanguageConsts.EmailCategoriesLabel + ":").PadRight(maxLength) +
-                                          String.Join("; ", categories) + Environment.NewLine;
+                                          String.Join("; ", categories.ToArray()) + Environment.NewLine;
 
                     // Empty line
                     emailHeader += Environment.NewLine;
@@ -710,7 +495,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 if (body == null)
                 {
                     body = "<html><head></head><body></body></html>";
-                    htmlBody = true;    
+                    htmlBody = true;
                 }
             }
 
@@ -795,7 +580,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 {
                     appointmentHeader +=
                         "<tr style=\"height: 18px; vertical-align: top; \"><td style=\"width: 100px; font-weight: bold; \">" +
-                        LanguageConsts.EmailCategoriesLabel + ":</td><td>" + String.Join("; ", categories) + "</td></tr>" +
+                        LanguageConsts.EmailCategoriesLabel + ":</td><td>" + String.Join("; ", categories.ToArray()) + "</td></tr>" +
                         Environment.NewLine;
 
                     // Empty line
@@ -886,7 +671,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
 
             // Sticky notes only have RTF or Text bodies
             var body = message.BodyRtf;
-            
+
             // If the body is not null then we convert it to HTML
             if (body != null)
             {
@@ -904,12 +689,12 @@ namespace DocumentServices.Modules.Readers.MsgReader
                     stickyNoteHeader +=
                         "<tr style=\"height: 18px; vertical-align: top; \"><td style=\"width: 100px; font-weight: bold; \">" +
                         LanguageConsts.StickyNoteDateLabel + ":</td><td>" +
-                        ((DateTime) message.SentOn).ToString(LanguageConsts.DataFormat) + "</td></tr>" +
+                        ((DateTime)message.SentOn).ToString(LanguageConsts.DataFormat) + "</td></tr>" +
                         Environment.NewLine;
 
                 // Empty line
                 stickyNoteHeader += "<tr><td colspan=\"2\" style=\"height: 18px; \">&nbsp</td></tr>" + Environment.NewLine;
-                
+
                 // End of table + empty line
                 stickyNoteHeader += "</table><br/>" + Environment.NewLine;
 
@@ -922,10 +707,10 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 // Sent on
                 if (message.SentOn != null)
                     stickyNoteHeader +=
-                        (LanguageConsts.StickyNoteDateLabel + ":") + ((DateTime) message.SentOn).ToString(LanguageConsts.DataFormat) + Environment.NewLine;
+                        (LanguageConsts.StickyNoteDateLabel + ":") + ((DateTime)message.SentOn).ToString(LanguageConsts.DataFormat) + Environment.NewLine;
 
                 body = stickyNoteHeader + body;
-                stickyNoteFile = outputFolder + (!string.IsNullOrEmpty(message.Subject) ? FileManager.RemoveInvalidFileNameChars(message.Subject) : "stickynote") + ".txt";   
+                stickyNoteFile = outputFolder + (!string.IsNullOrEmpty(message.Subject) ? FileManager.RemoveInvalidFileNameChars(message.Subject) : "stickynote") + ".txt";
             }
 
             // Write the body to a file
@@ -990,21 +775,21 @@ namespace DocumentServices.Modules.Readers.MsgReader
         /// Change the E-mail sender addresses to a human readable format
         /// </summary>
         /// <param name="message">The Storage.Message object</param>
-        /// <param name="convertToHref">When true then E-mail addresses are converted to hyperlinks</param>
-        /// <param name="html">Set this to true when the E-mail body format is html</param>
+        /// <param name="convertToHref">When true then E-mail addresses are converted to hyper-links</param>
+        /// <param name="html">Set this to true when the E-mail body format is HTML</param>
         /// <returns></returns>
         private static string GetEmailSender(Storage.Message message, bool convertToHref, bool html)
         {
             var output = string.Empty;
 
             if (message == null) return string.Empty;
-            
+
             var tempEmailAddress = message.Sender.Email;
             var tempDisplayName = message.Sender.DisplayName;
 
             if (string.IsNullOrEmpty(tempEmailAddress) && message.Headers != null && message.Headers.From != null)
                 tempEmailAddress = RemoveSingleQuotes(message.Headers.From.Address);
-            
+
             if (string.IsNullOrEmpty(tempDisplayName) && message.Headers != null && message.Headers.From != null)
                 tempDisplayName = message.Headers.From.DisplayName;
 
@@ -1039,7 +824,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
 
             else
             {
-                if(!string.IsNullOrEmpty(emailAddress))
+                if (!string.IsNullOrEmpty(emailAddress))
                     output = emailAddress;
 
                 if (!string.IsNullOrEmpty(displayName))
@@ -1085,7 +870,7 @@ namespace DocumentServices.Modules.Readers.MsgReader
                 {
                     case Storage.Recipient.RecipientType.To:
                         if (message.Headers.To != null)
-                            recipients.AddRange(message.Headers.To.Select(to => new Recipient {EmailAddress = to.Address, DisplayName = to.DisplayName}));
+                            recipients.AddRange(message.Headers.To.Select(to => new Recipient { EmailAddress = to.Address, DisplayName = to.DisplayName }));
                         break;
 
                     case Storage.Recipient.RecipientType.Cc:

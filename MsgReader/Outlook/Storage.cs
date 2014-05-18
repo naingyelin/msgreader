@@ -8,7 +8,6 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Text.RegularExpressions;
 using DocumentServices.Modules.Readers.MsgReader.Header;
-using DocumentServices.Modules.Readers.MsgReader.Rtf;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 using STATSTG = System.Runtime.InteropServices.ComTypes.STATSTG;
 
@@ -276,7 +275,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             ///   Initializes a new instance of the <see cref="Storage.MapiToOom" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal MapiToOom(Storage message) : base(message._storage)
+            internal MapiToOom(Storage message)
+                : base(message._storage)
             {
                 GC.SuppressFinalize(message);
                 _propHeaderSize = MapiTags.PropertiesStreamHeaderTop;
@@ -311,7 +311,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                     // Kind           | Guid
                     //                | LID (optional)
                     //                | NameSize      | Name (optional) (variable)
-                    
+
                     // Read the first byte to check what of kind we have
                     // 0x00 - The property is identified by the LID field.
                     // 0x01 - The property is identified by the Name field.
@@ -328,13 +328,13 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                     {
                         // We need the first 2 bytes for the mapping, but because the nameStreamBytes is in little 
                         // endian we need to swap the first 2 bytes
-                        var propIdent = new[] {nameStreamBytes[offset + 1], nameStreamBytes[offset]};
+                        var propIdent = new[] { nameStreamBytes[offset + 1], nameStreamBytes[offset] };
                         var propIdentString = BitConverter.ToString(propIdent).Replace("-", string.Empty);
                         var newValue = ushort.Parse(propIdentString, NumberStyles.HexNumber);
                         if (newValue < 32768) continue;
                         result.Add(propIdentString, namedProperty);
                     }
-                    
+
                 }
 
                 return result;
@@ -394,7 +394,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                     return _data;
                 }
             }
-            
+
             /// <summary>
             /// Returns the content id
             /// </summary>
@@ -461,7 +461,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// Initializes a new instance of the <see cref="Storage.Attachment" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal Attachment(Storage message) : base(message._storage)
+            internal Attachment(Storage message)
+                : base(message._storage)
             {
                 GC.SuppressFinalize(message);
                 _propHeaderSize = MapiTags.PropertiesStreamHeaderAttachOrRecip;
@@ -515,7 +516,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// Initializes a new instance of the <see cref="Storage.Sender" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal Sender(Storage message) : base(message._storage)
+            internal Sender(Storage message)
+                : base(message._storage)
             {
                 GC.SuppressFinalize(message);
                 _propHeaderSize = MapiTags.PropertiesStreamHeaderAttachOrRecip;
@@ -614,7 +616,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             ///   Initializes a new instance of the <see cref="Storage.Recipient" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal Recipient(Storage message) : base(message._storage)
+            internal Recipient(Storage message)
+                : base(message._storage)
             {
                 GC.SuppressFinalize(message);
                 _propHeaderSize = MapiTags.PropertiesStreamHeaderAttachOrRecip;
@@ -658,7 +661,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// </summary>
             public FlagStatus? Status
             {
-                get { return (FlagStatus) GetMapiPropertyInt32(MapiTags.PR_FLAG_STATUS); }
+                get { return (FlagStatus)GetMapiPropertyInt32(MapiTags.PR_FLAG_STATUS); }
             }
             #endregion
 
@@ -667,7 +670,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             ///   Initializes a new instance of the <see cref="Storage.Flag" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal Flag(Storage message) : base(message._storage)
+            internal Flag(Storage message)
+                : base(message._storage)
             {
                 _namedProperties = message._namedProperties;
                 GC.SuppressFinalize(message);
@@ -723,7 +727,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// </summary>
             public DateTime? DueDate
             {
-                get { return GetMapiPropertyDateTime(MapiTags.TaskDueDate); }    
+                get { return GetMapiPropertyDateTime(MapiTags.TaskDueDate); }
             }
 
             /// <summary>
@@ -731,7 +735,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// </summary>
             public TaskStatus? Status
             {
-                get { return (TaskStatus) GetMapiPropertyInt32(MapiTags.TaskStatus); }
+                get { return (TaskStatus)GetMapiPropertyInt32(MapiTags.TaskStatus); }
             }
 
             /// <summary>
@@ -739,7 +743,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// </summary>
             public bool? Complete
             {
-                get { return GetMapiPropertyBool(MapiTags.TaskComplete); }    
+                get { return GetMapiPropertyBool(MapiTags.TaskComplete); }
             }
 
             /// <summary>
@@ -756,7 +760,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// Initializes a new instance of the <see cref="Storage.Task" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal Task(Storage message) : base(message._storage)
+            internal Task(Storage message)
+                : base(message._storage)
             {
                 _namedProperties = message._namedProperties;
                 GC.SuppressFinalize(message);
@@ -826,7 +831,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
 
                     return null;
                 }
-            }    
+            }
 
             /// <summary>
             /// Returns the reccurence patern for the appointment
@@ -834,7 +839,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             public string RecurrencePatern
             {
                 get { return GetMapiPropertyString(MapiTags.ReccurrencePattern); }
-            }            
+            }
             #endregion
 
             #region Constructor
@@ -842,7 +847,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// Initializes a new instance of the <see cref="Storage.Task" /> class.
             /// </summary>
             /// <param name="message"> The message. </param>
-            internal Appointment(Storage message) : base(message._storage)
+            internal Appointment(Storage message)
+                : base(message._storage)
             {
                 _namedProperties = message._namedProperties;
                 GC.SuppressFinalize(message);
@@ -877,7 +883,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                 /// <summary>
                 /// High importance
                 /// </summary>
-                High =2
+                High = 2
             }
             #endregion
 
@@ -1132,7 +1138,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// Returns a <see cref="Flag"/> object when a flag has been set on the <see cref="Storage.Message"/>.
             /// It will return null when there isn't a flag set.
             /// </summary>
-            public new Flag Flag 
+            public new Flag Flag
             {
                 get
                 {
@@ -1140,11 +1146,11 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                         return _flag;
 
                     var flag = new Flag(this);
-                    
+
                     if (flag.Request != null)
                         _flag = flag;
-                    
-                    return _flag;                        
+
+                    return _flag;
                 }
             }
 
@@ -1158,7 +1164,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                 {
                     if (_appointment != null)
                         return _appointment;
-                    
+
                     switch (Type)
                     {
                         case MessageType.AppointmentRequest:
@@ -1244,26 +1250,31 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             {
                 get
                 {
-                    // Get value for the HTML MAPI property
-                    var html = GetMapiPropertyString(MapiTags.PR_BODY);
+                    var html = string.Empty;
+
+                    // Check if we have HTML embedded into rtf
+                    var bodyRtf = BodyRtf;
+                    if (!string.IsNullOrEmpty(bodyRtf))
+                    {
+                        var rtfDomDocument = new Rtf.DomDocument();
+                        rtfDomDocument.LoadRtfText(bodyRtf);
+                        if (!string.IsNullOrEmpty(rtfDomDocument.HtmlContent))
+                        {
+                            html = rtfDomDocument.HtmlContent;
+                        }
+                    }
 
                     // When there is no HTML found
-                    if (html == null)
+                    if (String.IsNullOrEmpty(html))
                     {
-                        // Check if we have HTML embedded into rtf
-                        var bodyRtf = BodyRtf;
-                        if (bodyRtf != null)
-                        {
-                            var rtfDomDocument = new Rtf.DomDocument();
-                            rtfDomDocument.LoadRtfText(bodyRtf);
-                            if (!string.IsNullOrEmpty(rtfDomDocument.HtmlContent))
-                                return rtfDomDocument.HtmlContent;
-                        }
+                        // Get value for the HTML MAPI property
+                        html = GetMapiPropertyString(MapiTags.PR_BODY);
                     }
 
                     return html;
                 }
             }
+
             #endregion
 
             #region Constructors
@@ -1271,7 +1282,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             ///   Initializes a new instance of the <see cref="Storage.Message" /> class from a msg file.
             /// </summary>
             /// <param name="msgfile">The msg file to load</param>
-            internal Message(string msgfile) : base(msgfile) {}
+            internal Message(string msgfile) : base(msgfile) { }
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Storage.Message" /> class from a <see cref="Stream" /> containing an IStorage.
@@ -1284,7 +1295,8 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             /// </summary>
             /// <param name="storage"> The storage to create the <see cref="Storage.Message" /> on. </param>
             /// <param name="renderingPosition"></param>
-            internal Message(NativeMethods.IStorage storage, int renderingPosition) : base(storage)
+            internal Message(NativeMethods.IStorage storage, int renderingPosition)
+                : base(storage)
             {
                 _propHeaderSize = MapiTags.PropertiesStreamHeaderTop;
                 RenderingPosition = renderingPosition;
@@ -1353,7 +1365,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
 
                             // Convert it to a short
                             var value = ushort.Parse(propIdentString, NumberStyles.HexNumber);
-                            
+
                             // Check if the value is in the named property range (8000 to FFFE (Hex))
                             if (value >= 32768 && value <= 65534)
                             {
@@ -1363,7 +1375,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
                             }
                         }
                     }
-                    
+
                     // Check if there is also a properties stream and if so get all the named MAPI properties from it
                     if (_streamStatistics.ContainsKey(MapiTags.PropertiesStream))
                     {
@@ -1595,7 +1607,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
         /// dictionary contains the named property and the VALUE contains the internal MAPI property where it is
         /// mapped to
         /// </summary>
-        private Dictionary<string, string> _namedProperties; 
+        private Dictionary<string, string> _namedProperties;
         #endregion
 
         #region Properties
@@ -1633,7 +1645,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             // Open and load IStorage from file
             NativeMethods.IStorage fileStorage;
             NativeMethods.StgOpenStorage(storageFilePath, null, NativeMethods.Stgm.Read | NativeMethods.Stgm.ShareDenyWrite, IntPtr.Zero, 0, out fileStorage);
-            
+
             // ReSharper disable once DoNotCallOverridableMethodsInConstructor
             LoadStorage(fileStorage);
         }
@@ -1663,7 +1675,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
 
                 // Open and load IStorage on the ILockBytes
                 NativeMethods.StgOpenStorageOnILockBytes(memoryStorageBytes, null, NativeMethods.Stgm.Read | NativeMethods.Stgm.ShareDenyWrite, IntPtr.Zero, 0, out memoryStorage);
-                
+
                 // ReSharper disable once DoNotCallOverridableMethodsInConstructor
                 LoadStorage(memoryStorage);
             }
@@ -1709,7 +1721,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
         {
             _storage = storage;
 
-             // Ensures memory is released
+            // Ensures memory is released
             ReferenceManager.AddItem(storage);
             NativeMethods.IEnumSTATSTG storageElementEnum = null;
 
@@ -1830,7 +1842,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
             var propValue = GetMapiPropertyFromStreamOrStorage(propIdentifier) ??
                             GetMapiPropertyFromPropertyStream(propIdentifier);
 
-            
+
             return propValue;
         }
         #endregion
@@ -1897,9 +1909,9 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
 
                         values.Add(value);
                     }
-                    
+
                     return values;
-                    
+
                 case MapiTags.PT_OBJECT:
                     return
                         NativeMethods.CloneStorage(
@@ -1981,7 +1993,7 @@ namespace DocumentServices.Modules.Readers.MsgReader.Outlook
         /// <returns> The value of the MAPI property as a integer. </returns>
         private int GetMapiPropertyInt32(string propIdentifier)
         {
-            return (int) GetMapiProperty(propIdentifier);
+            return (int)GetMapiProperty(propIdentifier);
         }
 
         /// <summary>
